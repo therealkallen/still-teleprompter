@@ -1,0 +1,161 @@
+# Still · Windows 桌面提词器
+
+基于 Tauri v2、React、TypeScript 和 Rust 的本地手动提词器，面向 Teams 长时间演讲。阅读窗口始终置顶；演讲者可以用鼠标或全局组合键手动导航。
+
+V1 **没有语音识别、LLM、自动跟读、账号或云端服务**。
+
+## 运行与构建
+
+开发环境：Windows 10/11 x64、Node.js 22.12+（推荐 24 LTS）、Rust 1.90+ MSVC 工具链、Visual Studio C++ Build Tools 和 Windows SDK、Microsoft Edge WebView2 Runtime。
+
+```powershell
+npm ci
+npm run desktop
+```
+
+首次构建需要下载 npm/Cargo 依赖。Tauri 使用系统 WebView2，不附带 Chromium。
+
+```powershell
+# 类型检查与前端测试
+npm run check
+
+# 前端生产构建
+npm run build
+
+# Rust 检查、测试与格式检查
+cargo check --manifest-path src-tauri/Cargo.toml
+cargo test --manifest-path src-tauri/Cargo.toml --lib
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+# 完整 Windows 应用及 NSIS 安装包
+npm run package
+
+# 只生成可运行程序，不下载安装器工具
+npm run package -- --no-bundle
+```
+
+产物：
+
+- `src-tauri/target/release/still-teleprompter.exe`：可直接运行的 Windows 程序；需要 WebView2。
+- `src-tauri/target/release/bundle/nsis/Still_1.0.2_x64-setup.exe`：安装包。
+
+构建配置包含 release LTO、体积优化、NSIS 中英文安装界面、应用图标和限制外部内容的 CSP。安装包尚未配置签名；正式对外发布时自行提供签名证书。离线机器应预装 WebView2。
+
+当前版本为 `release/Still-1.0.2.exe`，可直接运行，包含中英文界面选择、阅读页快速搜索和关闭修复。升级时先退出旧窗口，再打开新版；稿件和偏好使用同一本机数据目录，会继续保留。NSIS 工具从官方 GitHub 下载时超时，因此本次没有生成安装包；网络恢复后可重新运行 `npm run package`。完整验证结果见 [验证记录](docs/VALIDATION.md)。
+
+```powershell
+# 仅 UI 预览，不具备原生桌面能力
+npm run dev
+```
+
+浏览器打开 `http://127.0.0.1:1420`。预览明确显示原生功能不可用；预览数据在浏览器 localStorage 中，和桌面数据独立。
+
+## 使用
+
+首次打开提供一份标明为示例的稿件。移动鼠标显示工具栏；停留不操作后自动淡出，键盘焦点位于工具栏时继续显示。
+
+1. 点击编辑，粘贴文本，或导入 `.docx`、`.txt`、`.md`、`.markdown` 文件。导入会新建稿件，不修改源文件。
+2. 用 `# 标题` 定义章节，用 `[cue] 提示内容` 或 `::cue 提示内容` 定义不朗读的演讲提示。
+3. 在编辑页逐段修改文字、类型、章节层级和顺序。编辑一个段落的文本会将该段转为纯文本，其他段落的导入强调格式继续保留。
+4. 返回阅读，以滚轮或工具栏按钮向前/向后移动。在阅读窗口具有焦点时也支持方向键、Page Up/Down、Home/End 和空格。
+5. 打开导航可切换稿件、折叠子章节、搜索全文、跳转章节和管理书签。
+6. 设置中可选深色、浅色、半透明预设，单独调整背景与文字不透明度、字体、字号、行距、提示样式和滚动距离。
+
+### 稿件保存在提词器内
+
+每次修改会自动保存在本机，窗口底部显示「保存中 / 已保存」。编辑页的「保存到本机」可立即保存。退出后再打开会恢复稿件库、当前稿件、段落类型、书签、外观与阅读位置；通过「导航 → 当前稿件」选择其他已保存的稿件。导出文件是额外备份，不是日常保存的必要步骤。
+
+### 中文 / English 界面
+
+在「设置 → 界面语言」选择「中文」或「English」，即时生效，无需重启。选择会保存在本机，下次打开继续使用。英文界面的入口为 `Settings → Interface language`。
+
+语言选项只改变应用界面、按钮、提示、快捷键说明和窗口标题，不修改或翻译讲稿。升级前保存的数据默认继续使用中文，已有稿件、书签、外观和阅读位置保持不变。第三方文档解析器及操作系统返回的原始诊断细节按原文保留。
+
+### 阅读页快速搜索
+
+在阅读页点击工具栏的放大镜，或在提词器具有焦点时按 Ctrl+F。输入关键词后直接高亮并定位匹配文字，支持同一段内的多个匹配。使用上下按钮、Enter / Shift+Enter 在结果间切换，Esc 或关闭按钮收起搜索并继续阅读，无需进入导航页。
+
+搜索输入时窗口会主动获取焦点以便打字，关闭后恢复阅读模式。隐藏的演讲提示不参与阅读页搜索；导航页全文搜索仍可查找所有段落。极常见关键词最多显示 10,000 个结果，超限显示 `10000+`，可使用更具体的关键词。
+
+默认全局快捷键：
+
+| 组合键 | 动作 |
+| --- | --- |
+| Ctrl + Alt + ↑ / ↓ | 向上 / 向下滚动 |
+| Ctrl + Alt + ← / → | 上一章节 / 下一章节 |
+| Ctrl + Alt + B | 切换当前位置书签 |
+
+设置中可以修改组合键，并点击「应用快捷键」。注册失败会针对每项显示原因；成功的项正常使用，失败的项保持未注册。组合必须包含 Ctrl、Alt 或 Win，不能使用普通字符或 Shift 单独修饰。编辑、导航和设置中暂不执行阅读动作，但已注册的组合仍被操作系统占用；切回阅读即可继续。
+
+阅读模式使用 `WS_EX_NOACTIVATE` 和 `WM_MOUSEACTIVATE → MA_NOACTIVATE`，避免鼠标操作主动夺走 Teams/PowerPoint 的焦点。编辑、导航和设置需要输入，因此用户打开这些界面时会主动获取焦点。返回阅读不会把焦点自动转移给某个其他应用；再次点击 Teams/PowerPoint 后即可用全局快捷键继续控制提词器。可通过任务栏选中阅读窗口，再使用普通方向键。
+
+拖动左上角 Still 标记或工具栏空白部分移动窗口。使用窗口边缘调整尺寸。尺寸和位置在退出后恢复；窗口最小化状态不恢复。只允许一个实例，第二次启动会显示已有窗口。
+
+## 屏幕捕获排除
+
+默认请求 `WDA_EXCLUDEFROMCAPTURE`。程序读取 Windows 实际版本，并调用 `SetWindowDisplayAffinity`，随后使用 `GetWindowDisplayAffinity` 验证标记。
+
+| 状态 | 含义 |
+| --- | --- |
+| 已开启 | 设置调用成功，读取的标记为 `0x11` |
+| 已关闭 | 设置调用成功，读取的标记为 `0x0` |
+| 不支持 | 非 Windows 或 Windows 10 2004 / build 19041 之前的版本 |
+| 调用失败 | 句柄、API、状态读取或验证失败，展示错误信息 |
+
+窗口首次显示前先请求排除，再加载用户保存的开关。阅读、编辑和设置在同一个顶级窗口内，使用同一套捕获设置。透明度仅作用于 CSS 背景/文字，不设置整窗 alpha；窗口支持 WebView2 透明背景和自定义边框。
+
+**API 状态只表示操作系统接受了请求，不保证所有共享或录屏工具都隐藏稿件。** 正式使用前，请按 [手动测试清单](docs/MANUAL-TESTING.md) 检查 Teams 接收端、会议录制和实际录屏软件，尤其是半透明外观与窗口缩放后的情况。
+
+参考：[Microsoft SetWindowDisplayAffinity](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity)、[Tauri global shortcut](https://v2.tauri.app/plugin/global-shortcut/)、[Tauri window customization](https://v2.tauri.app/learn/window-customization/)。
+
+## 导入规则
+
+- TXT / 粘贴纯文本：空行分段；显式 `#` 到 `######` 生成章节；列表项独立保留；普通段落内的换行保留。不根据文字内容猜测段落类型。
+- Markdown：保留标题层级、段落、列表和粗体/斜体。链接只保留文字；不加载图片、HTML 脚本、iframe 或外部资源。
+- DOCX：使用 Mammoth 在本机解析，保留 Word 标题、列表和基本强调。名为 `Presenter Cue` 的段落样式生成提示；显式提示标记同样适用。复杂排版、图片、页眉页脚等不属于 V1 精确保真范围，解析警告会显示。
+- 所有格式都生成独立的结构化段落 ID。编辑文字、类型、顺序不改变 ID，书签和阅读锚点跟随段落。重复段落有不同 ID。
+- 单个文件最大 10 MB；文本最多 200 万字符；DOCX ZIP 声明的解压内容限制为 32 MB。TXT/Markdown 支持 UTF-8 和带 BOM 的 UTF-16；其他编码应先转换为 UTF-8。
+
+## 本地数据与恢复
+
+Windows 数据目录由 Tauri `app_data_dir()` 提供，通常为 `%APPDATA%\com.still.teleprompter\`：
+
+- `workspace.json`：稿件库、段落类型与强调、偏好、书签、全局快捷键和阅读锚点。
+- `workspace.json.bak`：上一次成功保存的数据。
+- `.window-state.json`：Tauri 插件保存的窗口位置与尺寸。
+
+保存写入临时文件并同步到磁盘，再替换主文件并保留备份；前端按顺序提交保存，退出前等待完成。阅读位置使用「段落 ID + 段内偏移」，找不到锚点时回退到百分比。
+
+若主文件损坏，程序报告错误并暂停自动保存，避免覆盖唯一可恢复内容。当前会话的修改不会自动保存，请先在设置中导出 JSON 备份。关闭程序，保留损坏文件的副本，再将 `workspace.json.bak` 复制为 `workspace.json` 后重启；没有主文件时自动从 `.bak` 恢复。
+
+完整 JSON 备份导入时，会将备份稿件作为新副本添加，保留书签和阅读位置，不删除当前稿件、不覆盖当前偏好。TXT 导出只保留章节、提示和文本。
+
+## 项目结构
+
+```text
+src/
+  App.tsx                 阅读界面与应用状态协调
+  model.ts                段落、稿件、设置与保存格式验证
+  parser.ts               TXT / Markdown / DOCX 确定性解析
+  scroll.ts               手动滚动与阅读锚点恢复
+  native.ts               Tauri 桥接与明确标记的浏览器回退
+  i18n.ts                 中英文界面、动态提示翻译与语言上下文
+  locales/en.json         英文翻译表（中文源文案为默认界面）
+  components/
+    Editor.tsx            粘贴、导入、结构编辑与备份导入
+    Navigation.tsx        稿件库、章节、搜索与书签
+    Settings.tsx          外观、捕获、滚动与全局快捷键
+  *.test.ts               解析、位置恢复与数据边界测试
+src-tauri/
+  src/capture.rs          Win32 捕获与焦点管理
+  src/hotkeys.rs          全局组合键验证、注册与冲突报告
+  src/persistence.rs      本机 JSON 保存、备份与恢复
+  src/lib.rs              插件、命令、窗口初始化
+  capabilities/main.json 最小窗口控制权限
+  tauri.conf.json         窗口、CSP 与生产安装配置
+docs/
+  MANUAL-TESTING.md       真实 Windows / Teams 验收清单
+  VALIDATION.md           本次构建验证记录
+```
+
+`ScrollController.moveTo()` 是未来目标阅读位置的入口，手动输入会取消正在执行的移动。V1 没有自动引擎、语音接口或预建复杂管线。

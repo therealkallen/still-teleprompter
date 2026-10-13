@@ -1,0 +1,151 @@
+# Windows Desktop Teleprompter — V1
+
+## Project Goal
+
+Build a lightweight, minimalist Windows desktop teleprompter optimized for long presentations in Microsoft Teams.
+
+The app should allow presenters to read and navigate scripts while switching between PowerPoint, Teams, browsers, and other applications, without exposing the teleprompter in supported screen-sharing or recording workflows.
+
+**V1 is manual-only. Do not implement ASR, LLM, embeddings, decision models, or automatic speech following.**
+
+## Technology Stack
+
+- Tauri v2 + React + TypeScript
+- Windows 10/11
+- Local-first; no cloud services or user accounts
+- Lightweight dependencies, clean modular architecture
+- Prefer native Windows APIs for window management and capture protection where necessary
+
+## Functional Requirements
+
+### 1. Window Management
+
+- Always-on-top floating window
+- Draggable, resizable, minimizable
+- Compact reading view
+- Borderless or custom minimal title bar
+- Auto-hide toolbar, revealed on mouse hover
+- Do not unnecessarily steal keyboard focus from Teams or PowerPoint
+- Persist window size and position
+
+### 2. Screen Capture Exclusion
+
+- Enabled by default
+- Toggle in Settings
+- Use the appropriate Windows capture-exclusion mechanism, such as WDA_EXCLUDEFROMCAPTURE
+- Distinguish enabled, disabled, unsupported, and API failure states
+- Do not claim guaranteed invisibility across all capture software
+- Provide practical instructions for testing with Teams screen sharing and recording
+- Test interactions with transparency and custom window chrome
+
+### 3. Script Import
+
+Support:
+- Direct text paste
+- DOCX
+- TXT
+- Markdown
+
+Preserve meaningful document structure, including headings, paragraphs, lists, and basic text emphasis where practical.
+
+Convert imported content into an internal structured representation with stable block IDs.
+
+### 4. Script Structure
+
+Support three block types:
+
+- Section: headings used for navigation
+- Spoken Text: actual presentation script
+- Presenter Cue: non-spoken instructions
+
+Allow users to edit text and manually change block types.
+
+Use deterministic import rules for explicit headings and cue markers. Do not attempt AI classification in V1.
+
+### 5. Manual Reading
+
+- Smooth vertical scrolling
+- Mouse wheel support
+- Keyboard scrolling when focused
+- Configurable global hotkeys using modifier combinations
+- Detect and report hotkey registration conflicts
+- Avoid intercepting ordinary typing
+- Adjustable scroll increments
+- Restore previous reading position
+
+### 6. Long Script Navigation
+
+- Collapsible section outline
+- Click to navigate to any section
+- Full-text search
+- Bookmarks
+- Current reading progress indicator
+
+### 7. Appearance Customization
+
+Design language: Apple-inspired minimalism, restrained typography, generous spacing, subtle rounded corners, no emojis or unnecessary decoration.
+
+Customizable options:
+- Background color
+- Background opacity
+- Text color
+- Text opacity (independent of background)
+- Font family
+- Font size
+- Line spacing
+- Presenter Cue appearance
+
+Provide a few well-designed presets, including dark, light, and transparent styles.
+
+Separate Reading View from Edit/Settings interfaces. Keep the Reading View extremely clean.
+
+### 8. Local Persistence
+
+Store scripts, block types, appearance settings, bookmarks, hotkeys, and reading progress locally.
+
+Do not modify the original imported documents.
+
+### 9. Future Extensibility
+
+Separate these modules:
+- Document Parser
+- Script Data Model
+- Reading Position / Scroll Controller
+- Window and Capture Management
+- Settings Persistence
+
+Design the Scroll Controller so that a future ASR Alignment Engine can supply target reading positions, while allowing manual overrides.
+
+Do not implement or overengineer the automatic mode now.
+
+## Delivery Requirements
+
+Produce a working Windows desktop application, not just a UI mockup.
+
+Provide:
+- Complete source code
+- Build and run instructions
+- Production build configuration
+- Clear project structure
+- README
+- Manual testing checklist
+
+Run available build and validation steps, and fix issues found. Report anything that cannot be validated in the current environment.
+
+## Development Strategy
+
+Implement in vertical slices:
+
+1. Functional always-on-top window with pasteable script, smooth manual scrolling, and capture exclusion.
+2. Import, navigation, structured blocks, and persistence.
+3. Appearance customization, hotkeys, and UI refinement.
+
+Prioritize a runnable working application over feature completeness. If a secondary feature becomes a blocker, isolate and document it rather than compromising the core functionality.
+
+## Acceptance Criteria
+
+The user can open a long presentation script, keep it visible while switching between Teams and PowerPoint, navigate manually without disruptive focus changes, and customize the reading experience.
+
+The app applies capture-exclusion settings and accurately reports API-level status. Actual invisibility must be independently tested in Teams and recording software.
+
+The final product should feel like a polished lightweight desktop utility, not a web dashboard inside a window.

@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Still",
+  "version": "1.0.2",
+  "identifier": "com.still.teleprompter",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [{
+      "label": "main",
+      "title": "Still · 提词器",
+      "width": 480,
+      "height": 640,
+      "minWidth": 340,
+      "minHeight": 400,
+      "decorations": false,
+      "transparent": true,
+      "shadow": false,
+      "alwaysOnTop": true,
+      "focus": false,
+      "resizable": true,
+      "visible": false
+    }],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "useLocalToolsDir": true,
+    "targets": ["nsis"],
+    "icon": ["icons/icon.ico"],
+    "shortDescription": "A manual desktop teleprompter",
+    "windows": { "nsis": { "displayLanguageSelector": true, "languages": ["English", "SimpChinese"] } }
+  }
+}

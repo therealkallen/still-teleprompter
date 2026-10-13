@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Still",
-  "version": "1.0.2",
+  "version": "2.0.0-beta.2",
   "identifier": "com.still.teleprompter",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -26,7 +26,7 @@
       "visible": false
     }],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'"
+      "csp": "default-src 'self'; script-src 'self'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src ipc: http://ipc.localhost; object-src 'none'; base-uri 'self'; frame-src 'none'"
     }
   },
   "bundle": {
@@ -34,7 +34,8 @@
     "useLocalToolsDir": true,
     "targets": ["nsis"],
     "icon": ["icons/icon.ico"],
-    "shortDescription": "A manual desktop teleprompter",
+    "shortDescription": "A local desktop teleprompter with speech auto follow",
+    "resources": { "../runtime/": "runtime/" },
     "windows": { "nsis": { "displayLanguageSelector": true, "languages": ["English", "SimpChinese"] } }
   }
 }

@@ -6,7 +6,7 @@ export interface Script {
   id: string; title: string; blocks: Block[]; bookmarks: string[];
   position: Position; updatedAt: string;
 }
-export type Action = 'up' | 'down' | 'previous' | 'next' | 'bookmark';
+export type Action = 'up' | 'down' | 'previous' | 'next' | 'bookmark' | 'follow';
 export interface Binding { action: Action; shortcut: string }
 export interface Appearance {
   background: string; backgroundOpacity: number; text: string; textOpacity: number;
@@ -14,9 +14,19 @@ export interface Appearance {
   cueColor: string; cueItalic: boolean; showCues: boolean;
 }
 export type Language = 'zh' | 'en';
+export type ReadingMode = 'manual' | 'auto' | 'timed';
+export interface TimedSettings { charactersPerMinute: number }
+export const defaultTimed: TimedSettings = { charactersPerMinute: 240 };
+export interface AutoFollowSettings {
+  mode: ReadingMode; deviceId: string; runtimePath: string; modelPath: string;
+  windowMs: number; intervalMs: number; threshold: number; diagnostics: boolean;
+}
+export const defaultAutoFollow: AutoFollowSettings = { mode: 'manual', deviceId: '', runtimePath: '', modelPath: '', windowMs: 3000, intervalMs: 750, threshold: 0.76, diagnostics: false };
 export interface Settings {
   language: Language;
   appearance: Appearance; captureExcluded: boolean; scrollStep: number; hotkeys: Binding[];
+  autoFollow: AutoFollowSettings;
+  timed: TimedSettings;
 }
 export interface Workspace { version: 1; scripts: Script[]; activeScriptId: string; settings: Settings }
 export const fonts = ['Segoe UI', 'Arial', 'Georgia', 'Microsoft YaHei', 'SimSun'] as const;
@@ -27,6 +37,8 @@ export const presets: Record<string, Appearance> = {
 };
 export const defaultSettings: Settings = {
   language: 'zh',
+  autoFollow: { ...defaultAutoFollow },
+  timed: { ...defaultTimed },
   appearance: { ...presets.dark }, captureExcluded: true, scrollStep: 100,
   hotkeys: [
     { action: 'up', shortcut: 'Ctrl+Alt+ArrowUp' },
@@ -34,9 +46,10 @@ export const defaultSettings: Settings = {
     { action: 'previous', shortcut: 'Ctrl+Alt+ArrowLeft' },
     { action: 'next', shortcut: 'Ctrl+Alt+ArrowRight' },
     { action: 'bookmark', shortcut: 'Ctrl+Alt+B' },
+    { action: 'follow', shortcut: 'Ctrl+Alt+Space' },
   ],
 };
-export const actionLabels: Record<Action, string> = { up: '向上滚动', down: '向下滚动', previous: '上一章节', next: '下一章节', bookmark: '切换当前位置书签' };
+export const actionLabels: Record<Action, string> = { up: '向上滚动', down: '向下滚动', previous: '上一章节', next: '下一章节', bookmark: '切换当前位置书签', follow: '暂停 / 继续滚动' };
 export const blockLabels: Record<BlockType, string> = { section: '章节', spoken: '正文', cue: '演讲提示' };
 export function createScript(title: string, blocks: Block[]): Script {
   return { id: crypto.randomUUID(), title: title.trim() || '未命名稿件', blocks, bookmarks: [], position: { blockId: blocks[0]?.id ?? null, offset: 0, ratio: 0 }, updatedAt: new Date().toISOString() };
@@ -68,7 +81,11 @@ export function validateWorkspace(value: unknown): Workspace {
   if (typeof value.activeScriptId !== 'string' || !ids.has(value.activeScriptId)) throw new Error('未找到当前稿件。');
   const s = value.settings, a = s.appearance;
   if (s.language !== undefined && s.language !== 'zh' && s.language !== 'en') throw new Error('界面语言设置无效。');
-  if (!record(a) || !validColor(a.background) || !validColor(a.text) || !validColor(a.cueColor) || !numeric(a.backgroundOpacity, 0, 1) || !numeric(a.textOpacity, 0.1, 1) || !numeric(a.fontSize, 16, 60) || !numeric(a.lineHeight, 1.2, 2.4) || !fonts.includes(a.fontFamily as typeof fonts[number]) || typeof a.cueItalic !== 'boolean' || typeof a.showCues !== 'boolean' || typeof s.captureExcluded !== 'boolean' || !numeric(s.scrollStep, 20, 500) || !Array.isArray(s.hotkeys) || s.hotkeys.length > 5 || s.hotkeys.some(b => !record(b) || !Object.hasOwn(actionLabels, String(b.action)) || typeof b.shortcut !== 'string')) throw new Error('设置数据无效。');
+  if (!record(a) || !validColor(a.background) || !validColor(a.text) || !validColor(a.cueColor) || !numeric(a.backgroundOpacity, 0, 1) || !numeric(a.textOpacity, 0.1, 1) || !numeric(a.fontSize, 16, 60) || !numeric(a.lineHeight, 1.2, 2.4) || !fonts.includes(a.fontFamily as typeof fonts[number]) || typeof a.cueItalic !== 'boolean' || typeof a.showCues !== 'boolean' || typeof s.captureExcluded !== 'boolean' || !numeric(s.scrollStep, 20, 500) || !Array.isArray(s.hotkeys) || s.hotkeys.length > 6 || s.hotkeys.some(b => !record(b) || !Object.hasOwn(actionLabels, String(b.action)) || typeof b.shortcut !== 'string')) throw new Error('设置数据无效。');
+  const auto = s.autoFollow === undefined ? { ...defaultAutoFollow } : s.autoFollow;
+  if (!record(auto) || !['manual', 'auto', 'timed'].includes(String(auto.mode)) || !['deviceId','runtimePath','modelPath'].every(key => typeof auto[key] === 'string' && (auto[key] as string).length <= 4096) || !numeric(auto.windowMs, 2000, 4000) || !Number.isInteger(auto.windowMs) || !numeric(auto.intervalMs, 500, 1500) || !Number.isInteger(auto.intervalMs) || !numeric(auto.threshold, 0.65, 0.95) || typeof auto.diagnostics !== 'boolean') throw new Error('自动跟读设置无效。');
+  const timed = s.timed === undefined ? { ...defaultTimed } : s.timed;
+  if (!record(timed) || !numeric(timed.charactersPerMinute, 60, 1200) || !Number.isInteger(timed.charactersPerMinute)) throw new Error('定时语速设置无效。');
   // Existing V1 workspaces have no language setting. Migrate without touching scripts.
-  return { ...value, settings: { ...s, language: s.language ?? 'zh' } } as unknown as Workspace;
+  return { ...value, settings: { ...s, language: s.language ?? 'zh', autoFollow: auto, timed, hotkeys: s.hotkeys.some(b => b.action === 'follow') ? s.hotkeys : [...s.hotkeys, { action: 'follow', shortcut: 'Ctrl+Alt+Space' }] } } as unknown as Workspace;
 }

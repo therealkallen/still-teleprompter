@@ -4,12 +4,15 @@ import { actionLabels, defaultSettings, fonts, presets, type Appearance, type Bi
 import type { CaptureStatus, HotkeyStatus } from '../native';
 import { desktop } from '../native';
 import { useI18n } from '../i18n';
+import AutoFollowSettings, { type ReturnTypeFollow } from './AutoFollowSettings';
+import TimedSettings from './TimedSettings';
 
 interface Props {
   settings: SettingsModel; update: (settings: SettingsModel) => void;
   capture: CaptureStatus | null; hotkeys: HotkeyStatus[]; exportBackup: () => void;
+  follow: ReturnTypeFollow;
 }
-export default function Settings({ settings, update, capture, hotkeys, exportBackup }: Props) {
+export default function Settings({ settings, update, capture, hotkeys, exportBackup, follow }: Props) {
   const { t, message } = useI18n();
   const [bindings, setBindings] = useState<Binding[]>(settings.hotkeys);
   const [bindingError, setBindingError] = useState('');
@@ -26,6 +29,8 @@ export default function Settings({ settings, update, capture, hotkeys, exportBac
     setBindingError(''); update({ ...settings, hotkeys: bindings.map(b => ({ ...b, shortcut: b.shortcut.trim() })) });
   };
   return <div className="panel-body settings-body">
+    <TimedSettings options={settings.timed} update={timed => update({ ...settings, timed })} />
+    <AutoFollowSettings options={settings.autoFollow} update={autoFollow => update({ ...settings, autoFollow })} follow={follow} />
     <section className="setting-section">
       <h2>{t('语言')}</h2>
       <label className="field horizontal">{t('界面语言')}<select value={settings.language} onChange={e => update({ ...settings, language: e.target.value as SettingsModel['language'] })}>
@@ -73,7 +78,7 @@ export default function Settings({ settings, update, capture, hotkeys, exportBac
     <section className="setting-section">
       <h2>{t("手动控制")}</h2>
       <Range label={t("每次滚动距离")} value={settings.scrollStep} min={20} max={500} step={10} suffix=" px" onChange={scrollStep => update({ ...settings, scrollStep })} />
-      <p className="help">{t("全局快捷键可以在其他应用中使用。只触发手动动作，不自动跟随语音。在编辑和设置中暂不执行动作。")}</p>
+      <p className="help">{t("暂停 / 恢复快捷键也适用于已开始的定时滚动。在编辑和设置中暂不执行阅读动作。")}</p>
       {!desktop && <p className="inline-warning">{t("浏览器预览无法注册全局快捷键。")}</p>}
       <div className="hotkey-fields">{bindings.map((binding, index) => <label className="field" key={binding.action}>
         <span>{t(actionLabels[binding.action])}</span>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowDown, ArrowLeft, ArrowUp, Bookmark, Check, ChevronLeft, ChevronRight, List, LoaderCircle, Minus, Pencil, Search, Settings2, ShieldCheck, ShieldOff, TriangleAlert, X } from 'lucide-react';
 import { initialWorkspace } from './demo';
-import { createScript, rgba, type Action, type Script, type Workspace } from './model';
+import { createScript, defaultAutoFollow, defaultTimed, rgba, type Action, type Script, type Workspace } from './model';
 import { captureProtection, closeWindow, configureHotkeys, desktop, dragWindow, loadWorkspace, manualActions, minimizeWindow, onClose, readingMode, revealWindow, saveWorkspace, setWindowTitle, type CaptureStatus, type HotkeyStatus } from './native';
 import { positionAt, restorePosition, ScrollController, type BlockGeometry } from './scroll';
 import Editor, { download } from './components/Editor';
@@ -10,6 +10,10 @@ import Settings from './components/Settings';
 import QuickSearch, { HighlightedText } from './components/QuickSearch';
 import { findMatches, type SearchMatch } from './search';
 import { LanguageContext, createTranslator, translateMessage } from './i18n';
+import { useAutoFollow } from './follow/useAutoFollow';
+import { followScrollTarget, textLocation } from './follow/scroll';
+import AutoFollow from './components/AutoFollow';
+import { useTimedScroll } from './useTimedScroll';
 
 type Panel = 'read' | 'edit' | 'navigation' | 'settings';
 export default function App() {
@@ -35,6 +39,7 @@ export default function App() {
   const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingJump = useRef<string | null>(null);
+  const lastFollowMove = useRef(-Infinity);
   latest.current = workspace;
   panelRef.current = panel;
   searchOpenRef.current = searchOpen;
@@ -63,6 +68,34 @@ export default function App() {
     const top = view.getBoundingClientRect().top;
     return Array.from(view.querySelectorAll<HTMLElement>('[data-block-id]')).filter(el => el.getClientRects().length > 0).map(el => ({ id: el.dataset.blockId!, top: Math.max(0, el.getBoundingClientRect().top - top + view.scrollTop - 60), height: el.offsetHeight }));
   }, []);
+  const followAnchor = useCallback(() => {
+    const view = viewport.current;
+    const active = latest.current?.scripts.find(s => s.id === latest.current?.activeScriptId);
+    if (!view || !active) return { blockId: null, offset: 0 };
+    const y = view.getBoundingClientRect().top + view.clientHeight * 0.38;
+    const visible = Array.from(view.querySelectorAll<HTMLElement>('.block-spoken'));
+    const block = visible.findLast(el => el.getBoundingClientRect().top <= y) ?? visible[0];
+    if (!block) return { blockId: null, offset: 0 };
+    const text = active.blocks.find(b => b.id === block.dataset.blockId)?.text ?? '';
+    let low = 0, high = text.length;
+    while (low < high) { const mid = Math.ceil((low + high) / 2); if (textLocation(block, mid) <= y) low = mid; else high = mid - 1; }
+    return { blockId: block.dataset.blockId ?? null, offset: low };
+  }, []);
+  const autoMove = useCallback((target: { blockId: string; offset: number; recovery: boolean }) => {
+    const view = viewport.current;
+    if (!view || panelRef.current !== 'read' || searchOpenRef.current) return;
+    const block = Array.from(view.querySelectorAll<HTMLElement>('[data-block-id]')).find(el => el.dataset.blockId === target.blockId);
+    if (!block) return;
+    const location = textLocation(block, target.offset) - view.getBoundingClientRect().top + view.scrollTop;
+    const now = performance.now();
+    const destination = followScrollTarget({ location, top: view.scrollTop, height: view.clientHeight, now, lastMove: lastFollowMove.current, recovery: target.recovery });
+    if (destination !== null) { lastFollowMove.current = now; controller.current?.moveTo(destination); }
+  }, []);
+  const cancelFollowScroll = useCallback(() => controller.current?.cancel(), []);
+  const follow = useAutoFollow({ scriptId: script?.id ?? '', blocks: script?.blocks ?? [], options: workspace?.settings.autoFollow ?? defaultAutoFollow, anchor: followAnchor, move: autoMove, cancelScroll: cancelFollowScroll });
+  const timed = useTimedScroll({ mode: workspace?.settings.autoFollow.mode ?? 'manual', scriptId: script?.id ?? '', blocks: script?.blocks ?? [], charactersPerMinute: workspace?.settings.timed.charactersPerMinute ?? defaultTimed.charactersPerMinute, appearanceKey: JSON.stringify(workspace?.settings.appearance ?? {}), viewport, cancelScroll: cancelFollowScroll, notify });
+  const pauseReading = useCallback(() => { follow.pause(); timed.pause(); }, [follow.pause, timed.pause]);
+  useEffect(() => { if (follow.error) notify(follow.error); }, [follow.error, notify]);
   const recordPosition = useCallback(() => {
     const current = latest.current, view = viewport.current;
     if (!current || !view) return;
@@ -112,15 +145,17 @@ export default function App() {
   }, [hotkeyKey, notify]);
 
   const changePanel = useCallback(async (next: Panel) => {
+    if (next !== 'read') pauseReading();
     try { await readingMode(next === 'read'); setSearchOpen(false); setSearchQuery(''); setSearchIndex(0); setPanel(next); setAwake(true); if (next === 'read') requestAnimationFrame(() => viewport.current?.focus({ preventScroll: true })); }
     catch (error) { notify(`窗口焦点模式切换失败：${String(error)}`); }
-  }, [notify]);
+  }, [notify, pauseReading]);
   const openQuickSearch = useCallback(async () => {
+    pauseReading();
     try {
       await readingMode(false); setSearchOpen(true); setAwake(true);
       requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.quick-search input')?.focus());
     } catch (error) { notify(`无法打开快速搜索：${String(error)}`); }
-  }, [notify]);
+  }, [notify, pauseReading]);
   const closeQuickSearch = useCallback(async () => {
     try {
       await readingMode(true); setSearchOpen(false); setSearchQuery(''); setSearchIndex(0);
@@ -138,10 +173,11 @@ export default function App() {
   }, [openQuickSearch]);
   useLayoutEffect(() => {
     if (!searchOpen || !currentMatch) return;
+    pauseReading();
     const view = viewport.current;
     const mark = view?.querySelector<HTMLElement>('mark[data-current-match="true"]');
     if (view && mark) controller.current?.moveTo(mark.getBoundingClientRect().top - view.getBoundingClientRect().top + view.scrollTop - 60);
-  }, [searchOpen, currentMatch]);
+  }, [searchOpen, currentMatch, pauseReading]);
   const toggleBookmark = useCallback((id?: string) => {
     setWorkspace(old => {
       if (!old) return old;
@@ -152,6 +188,7 @@ export default function App() {
     });
   }, []);
   const jumpTo = useCallback((id: string) => {
+    pauseReading();
     const blocks = geometry();
     let location = blocks.find(b => b.id === id);
     if (!location) {
@@ -165,9 +202,11 @@ export default function App() {
       }
     }
     if (location) controller.current?.moveTo(location.top);
-  }, [geometry, notify]);
+  }, [geometry, notify, pauseReading]);
   const handleAction = useCallback((action: Action) => {
     if (panelRef.current !== 'read') return;
+    if (action === 'follow') { if (latest.current?.settings.autoFollow.mode === 'timed') timed.toggle(); else follow.toggle(); return; }
+    if (action !== 'bookmark') pauseReading();
     const current = latest.current; if (!current) return;
     const active = current.scripts.find(s => s.id === current.activeScriptId); if (!active) return;
     if (action === 'up' || action === 'down') controller.current?.moveBy(current.settings.scrollStep * (action === 'up' ? -1 : 1));
@@ -178,7 +217,7 @@ export default function App() {
       const target = action === 'next' ? sections.find(b => b.top > view.scrollTop + 5) : sections.findLast(b => b.top < view.scrollTop - 5);
       if (target) controller.current?.moveTo(target.top);
     }
-  }, [geometry, recordPosition, toggleBookmark]);
+  }, [geometry, recordPosition, toggleBookmark, pauseReading, follow.toggle, timed.toggle]);
   const actionRef = useRef(handleAction); actionRef.current = handleAction;
   useEffect(() => {
     let disposed = false, stop = () => {};
@@ -187,9 +226,9 @@ export default function App() {
   }, []);
   useEffect(() => {
     let disposed = false, stop = () => {};
-    void onClose(async () => { if (blockedRef.current) return; recordPosition(); await flush(); }).then(unlisten => { if (disposed) unlisten(); else stop = unlisten; });
+    void onClose(async () => { timed.stop(); await follow.stop(); if (blockedRef.current) return; recordPosition(); await flush(); }).then(unlisten => { if (disposed) unlisten(); else stop = unlisten; });
     return () => { disposed = true; stop(); };
-  }, [flush, recordPosition]);
+  }, [flush, recordPosition, follow.stop, timed.stop]);
 
   const appearanceKey = workspace ? JSON.stringify(workspace.settings.appearance) : null;
   useLayoutEffect(() => {
@@ -248,7 +287,7 @@ export default function App() {
     if (desktop) { await closeWindow(); } else { await flush().catch(() => {}); notify('浏览器预览已保存。关闭此浏览器标签页即可退出。'); }
   };
 
-  return <LanguageContext.Provider value={language}><div className={`app-shell ${panel !== 'read' ? 'panel-open' : ''} ${awake ? 'awake' : ''} ${searchOpen ? 'search-open' : ''}`} style={style} onPointerMove={wake} onPointerLeave={leave}>
+  return <LanguageContext.Provider value={language}><div className={`app-shell ${panel !== 'read' ? 'panel-open' : ''} ${awake ? 'awake' : ''} ${searchOpen ? 'search-open' : ''} ${workspace.settings.autoFollow.mode !== 'manual' ? 'auto-mode' : ''}`} style={style} onPointerMove={wake} onPointerLeave={leave}>
     <header className="window-toolbar">
       {panel === 'read' ? <>
         <button className="brand-drag" aria-label={t("拖动窗口")} onPointerDown={e => { if (e.button === 0) void dragWindow().catch(notify); }}><span className="brand-mark"><i /><i /><i /></span><span>Still</span></button>
@@ -267,6 +306,7 @@ export default function App() {
       <button className="icon-button" aria-label={t("最小化")} title={t("最小化")} onClick={() => void minimizeWindow().catch(notify)}><Minus size={16} /></button>
       <button className="icon-button close-button" aria-label={t("关闭应用")} title={t("关闭应用")} onClick={() => void saveAndClose().catch(notify)}><X size={16} /></button>
     </header>
+    {panel === 'read' && <AutoFollow follow={follow} timed={timed} rate={workspace.settings.timed.charactersPerMinute} mode={workspace.settings.autoFollow.mode} onMode={mode => { timed.stop(); follow.setMode(mode); setWorkspace(old => old ? { ...old, settings: { ...old.settings, autoFollow: { ...old.settings.autoFollow, mode } } } : old); }} />}
     {!desktop && <div className="preview-label">{t("浏览器预览 · 原生窗口、捕获排除和全局快捷键需桌面版")}</div>}
     {blocked && <div className="storage-blocked">{t("本地数据读取失败，保存已暂停。")}<button onClick={exportBackup}>{t("导出当前内容")}</button></div>}
     <div className="reader-wrap" style={{ visibility: panel === 'read' ? 'visible' : 'hidden' }} aria-hidden={panel !== 'read'}>
@@ -274,18 +314,24 @@ export default function App() {
         move={delta => { if (search.matches.length) setSearchIndex((activeSearchIndex + delta + search.matches.length) % search.matches.length); }} close={() => void closeQuickSearch()} />}
       <div className="eye-line" />
       <main ref={viewport} className="reader" aria-label={t("演讲稿阅读区域")} tabIndex={panel === 'read' ? 0 : -1}
-        onWheel={() => controller.current?.cancel()}
-        onPointerDown={() => controller.current?.cancel()}
+        onWheel={() => { pauseReading(); controller.current?.cancel(); }}
+        onPointerDown={e => { if (e.clientX >= e.currentTarget.getBoundingClientRect().right - 16) pauseReading(); controller.current?.cancel(); }}
+        onTouchMove={() => pauseReading()}
         onScroll={() => {
           const view = viewport.current; if (!view) return;
-          setProgress(view.scrollHeight > view.clientHeight ? view.scrollTop / (view.scrollHeight - view.clientHeight) : 0);
-          if (scrollTimer.current) clearTimeout(scrollTimer.current);
-          scrollTimer.current = setTimeout(recordPosition, 160);
+          setProgress(view.scrollHeight > view.clientHeight ? Math.round(view.scrollTop / (view.scrollHeight - view.clientHeight) * 100) / 100 : 0);
+          if (latest.current?.settings.autoFollow.mode === 'timed') {
+            if (!scrollTimer.current) scrollTimer.current = setTimeout(() => { scrollTimer.current = null; recordPosition(); }, 1000);
+          } else {
+            if (scrollTimer.current) clearTimeout(scrollTimer.current);
+            scrollTimer.current = setTimeout(() => { scrollTimer.current = null; recordPosition(); }, 160);
+          }
         }}
         onKeyDown={e => {
           if (e.ctrlKey || e.altKey || e.metaKey) return;
           if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) {
             e.preventDefault();
+            pauseReading();
             if (e.key === 'Home' || e.key === 'End') controller.current?.moveTo(e.key === 'Home' ? 0 : viewport.current!.scrollHeight);
             else controller.current?.moveBy((e.key === 'PageDown' || e.key === 'PageUp' || e.key === ' ' ? viewport.current!.clientHeight * 0.7 : workspace.settings.scrollStep) * (['ArrowUp', 'PageUp'].includes(e.key) ? -1 : 1));
           }
@@ -314,7 +360,7 @@ export default function App() {
         jump={id => { pendingJump.current = id; void changePanel('read'); }} toggleBookmark={toggleBookmark}
         newScript={() => { addScript(createScript(t("未命名稿件"), [])); void changePanel('edit'); }}
         deleteScript={id => setWorkspace(old => old && old.scripts.length > 1 ? { ...old, scripts: old.scripts.filter(s => s.id !== id), activeScriptId: old.scripts.find(s => s.id !== id)!.id } : old)} />}
-      {panel === 'settings' && <Settings settings={workspace.settings} update={settings => setWorkspace(old => old ? { ...old, settings } : old)} capture={capture} hotkeys={hotkeys} exportBackup={exportBackup} />}
+      {panel === 'settings' && <Settings settings={workspace.settings} update={settings => setWorkspace(old => old ? { ...old, settings } : old)} capture={capture} hotkeys={hotkeys} exportBackup={exportBackup} follow={follow} />}
     </div>}
     <footer className="window-footer"><span title={script.title}>{panel === 'read' ? currentSection?.text ?? script.title : script.title}</span>
       {blocked ? <span className="warning">{t("保存暂停")}</span> : saveState === 'error' ? <button onClick={() => void flush().catch(() => {})}>{t("保存失败 · 重试")}</button> : <span className="save-status" role="status">{saveState === 'saving' ? <><LoaderCircle size={11} className="spinner" />{t("保存中")}</> : <><Check size={11} />{t("已保存")}</>}</span>}

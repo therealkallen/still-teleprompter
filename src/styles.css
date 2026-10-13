@@ -40,6 +40,22 @@ select { cursor: pointer; }
 .storage-blocked { background: #61412e; padding: 7px 12px; font-size: 12px; z-index: 6; }
 .storage-blocked button { margin-left: 8px; padding: 4px 8px; }
 .reader-wrap { flex: 1; min-height: 0; position: relative; }
+.follow-bar { flex-shrink: 0; min-height: 36px; display: flex; align-items: center; gap: 7px; padding: 3px 12px; background: #202427f5; color: #d6ded7; font-size: 11px; }
+.follow-modes { display: inline-flex; background: #151a17; border-radius: 6px; padding: 2px; flex-shrink: 0; }
+.follow-modes button { padding: 4px 8px; font-size: 11px; background: transparent; border-radius: 4px; }
+.follow-modes button[aria-pressed='true'] { background: #3d4841; color: #eff6ef; }
+.follow-status { display: inline-flex; align-items: center; gap: 4px; min-width: 0; flex: 1; }
+.follow-status svg { flex-shrink: 0; }
+.follow-status span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.follow-status.following { color: var(--accent); }
+.follow-status.error { color: #e9bf92; }
+.follow-action { padding: 5px 7px; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+.follow-bar .icon-button { width: 25px; height: 26px; }
+.auto-mode .eye-line { top: 38%; }
+.follow-settings-actions { margin-top: 10px; }
+.test-guide .field { margin: 16px 0; }
+.follow-metrics { display: block; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.pace-input { width: 100px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 .quick-search { position: absolute; top: 8px; left: 12px; right: 12px; height: 42px; padding: 4px 6px 4px 11px; display: flex; align-items: center; gap: 3px; background: #303a33; color: #f0f4ed; border-radius: 8px; z-index: 3; box-shadow: 0 4px 12px #0003; }
 .quick-search-icon { flex-shrink: 0; color: var(--accent); margin-right: 4px; }
 .quick-search input { min-width: 0; flex: 1; background: transparent; border: 0; padding: 7px 3px; font-size: 12px; }

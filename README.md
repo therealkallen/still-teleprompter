@@ -1,8 +1,58 @@
 # Still · Windows 桌面提词器
 
-基于 Tauri v2、React、TypeScript 和 Rust 的本地手动提词器，面向 Teams 长时间演讲。阅读窗口始终置顶；演讲者可以用鼠标或全局组合键手动导航。
+基于 Tauri v2、React、TypeScript 和 Rust 的本地提词器，面向 Teams 长时间演讲。V2 在 Still 1.0.2 基础上增加本地 SenseVoice 自动跟读与定时滚动；阅读窗口、手动导航、稿件和偏好继续保留。
 
-V1 **没有语音识别、LLM、自动跟读、账号或云端服务**。
+当前版本为 **2.0.0-beta.2**：支持手动、自动跟读和定时三种模式，无账号、云端语音服务或 LLM。真人语音跟读、Teams 麦克风共用和两小时稳定性仍待验收，见 [V2 验证记录](docs/V2-VALIDATION.md)。
+
+## V2 测试包与自动跟读
+
+完整解压 `release/Still-2.0.0-beta.2-windows-x64.zip`，运行目录中的 `Still.exe`。必须保留同目录的 `runtime`，不需要安装系统 Python。需要 Windows 10/11 x64 和 WebView2。先退出旧版再打开新版；仍使用 `com.still.teleprompter` 数据目录，建议升级前保留 `workspace.json` 和 `.bak` 的副本。之前的发布版保留在 release 中。
+
+### 定时模式
+
+在「设置 → 定时滚动」输入语速，支持 **60–1200 字/分钟**，默认 **240 字/分钟**，按 Enter 或离开输入框保存。阅读页选择「定时」，再点击「开始滚动」。
+
+字数只统计正文中的 Unicode 文字与数字，不计标点、空白、章节和提示；英文每个字母算一字。速度按每段正文的字数与实际显示高度换算，段间的标题和提示间距平滑经过。这是段落平均语速，不是逐字高亮或语音跟随。字号、换行和窗口大小变化会重新换算。
+
+滚轮、方向键、工具栏、搜索和导航会暂停；点击「继续滚动」从当前视口继续。Ctrl+Alt+Space 可暂停/继续已开始的定时滚动。稿件末尾自动停止；空正文不能开始。切换模式或重启不会自行启动。最小化/页面隐藏会暂停，返回后需要明确继续。定时模式不启用麦克风和 ASR，浏览器预览也可运行。
+
+### 自动跟读
+
+1. 打开现有稿件，在阅读页选择「自动」，再点击「开始跟读」。记忆模式不会在重启后自动打开麦克风。
+2. 在「设置 → 自动跟读」选择系统默认或指定麦克风。资源随包附带；高级目录留空即可。
+3. 开始讲话后，可靠匹配时显示「跟读中」；静音、离稿、短句或证据不足时显示「等待匹配」，保持视口。
+4. 手动滚动、按键、搜索、章节/书签跳转或进入面板会暂停跟读。点击「恢复跟读」或 Ctrl+Alt+Space，从当前可见位置匹配；旧音频窗口会清空。
+5. 「暂停」只暂停自动滚动，仍监听；「停止跟读」或切回「手动」关闭麦克风并释放 ASR 进程。错误后检查设备/资源，再点重试。
+
+只匹配 Spoken Text（正文），不匹配章节标题和演讲提示。支持确定性的大小写、全半角、标点、填词、基本数字和模糊匹配；重大语义改写没有可靠保证。远处段落需要多次确认；重复段落可能保持等待。自动目标按实际文本行定位在视口约 38%，有舒适区、最小移动距离与滚动限频。
+
+所有处理在本机完成。音频只保留 2–4 秒有界内存窗口，通过管道传给独立 Python/ONNX 推理进程，不写录音文件、不上传。匹配在独立 Web Worker 中运行。诊断默认关闭，只显示耗时、置信度与序号，不记录识别文字。未使用系统回环音频，不采集 Teams 远端声音。
+
+### 准备本地模型（开发与重新构建）
+
+模型不放入 Git。复用已兼容的 SenseVoiceSmall INT8 sherpa-onnx runtime，包含 `python/python.exe`、`asr/model.int8.onnx`、`asr/tokens.txt` 和 `sherpa_onnx/lib` 下的原生扩展与 ONNX Runtime。使用路径参数复制到本项目，不改动原项目，不自动下载权重：
+
+```powershell
+./scripts/prepare-asr.ps1 -SourceRuntime '你的 ASR-only runtime 目录' -SourceLicenses '对应许可目录'
+npm run desktop
+```
+
+开发也可在设置指定 runtime 与 model 目录，或设置 `STILL_ASR_RUNTIME` / `STILL_ASR_MODEL`。默认开发路径是项目内 runtime；正式包使用随 exe 分发的 runtime，worker 协议始终使用 Still 自己的实现。无需硬编码 VoiceFlow 路径。
+
+```powershell
+# 检查实际 ONNX 架构与量化元数据；只用 Python 标准库
+python -B scripts/inspect-model.py runtime/asr/model.int8.onnx
+# 真正加载 SenseVoice 并通过二进制 PCM 管道识别静音或指定单声道 PCM16 WAV
+python -B scripts/verify-asr.py
+python -B scripts/verify-asr.py --wav '测试语音.wav'
+# 可选的两秒本机共享麦克风测试，不保存音频
+cargo test --manifest-path src-tauri/Cargo.toml --lib shared_microphone_capture_smoke -- --ignored --nocapture
+# release 编译 + 包含所有模型、运行库和许可的便携 ZIP 与体积报告
+npm run package -- --no-bundle
+./scripts/package-v2.ps1
+```
+
+`verify-asr.py` 默认仅输出性能指标；`--show-text` 是开发者主动选择输出测试文件的识别文字。英文合成语音和交替语言测试用于管道验证，不能代替真人同句混说验收。
 
 ## 运行与构建
 
@@ -37,11 +87,11 @@ npm run package -- --no-bundle
 产物：
 
 - `src-tauri/target/release/still-teleprompter.exe`：可直接运行的 Windows 程序；需要 WebView2。
-- `src-tauri/target/release/bundle/nsis/Still_1.0.2_x64-setup.exe`：安装包。
+- `src-tauri/target/release/bundle/nsis/Still_2.0.0-beta.2_x64-setup.exe`：NSIS 安装器构建目标（本次交付为便携 ZIP）。
 
 构建配置包含 release LTO、体积优化、NSIS 中英文安装界面、应用图标和限制外部内容的 CSP。安装包尚未配置签名；正式对外发布时自行提供签名证书。离线机器应预装 WebView2。
 
-当前版本为 `release/Still-1.0.2.exe`，可直接运行，包含中英文界面选择、阅读页快速搜索和关闭修复。升级时先退出旧窗口，再打开新版；稿件和偏好使用同一本机数据目录，会继续保留。NSIS 工具从官方 GitHub 下载时超时，因此本次没有生成安装包；网络恢复后可重新运行 `npm run package`。完整验证结果见 [验证记录](docs/VALIDATION.md)。
+1.0.2 历史发布版保留为 `release/Still-1.0.2.exe`，历史验证见 [V1 验证记录](docs/VALIDATION.md)。V2 可执行文件必须与语音 runtime 一同分发；完整验证和限制见 [V2 验证记录](docs/V2-VALIDATION.md)，真人验收见 [V2 手动测试清单](docs/V2-MANUAL-TESTING.md)。
 
 ```powershell
 # 仅 UI 预览，不具备原生桌面能力
@@ -84,6 +134,7 @@ npm run dev
 | Ctrl + Alt + ↑ / ↓ | 向上 / 向下滚动 |
 | Ctrl + Alt + ← / → | 上一章节 / 下一章节 |
 | Ctrl + Alt + B | 切换当前位置书签 |
+| Ctrl + Alt + Space | 暂停 / 继续已开始的自动跟读或定时滚动 |
 
 设置中可以修改组合键，并点击「应用快捷键」。注册失败会针对每项显示原因；成功的项正常使用，失败的项保持未注册。组合必须包含 Ctrl、Alt 或 Win，不能使用普通字符或 Shift 单独修饰。编辑、导航和设置中暂不执行阅读动作，但已注册的组合仍被操作系统占用；切回阅读即可继续。
 
@@ -158,4 +209,6 @@ docs/
   VALIDATION.md           本次构建验证记录
 ```
 
-`ScrollController.moveTo()` 是未来目标阅读位置的入口，手动输入会取消正在执行的移动。V1 没有自动引擎、语音接口或预建复杂管线。
+`ScrollController.moveTo()` 继续作为滚动入口。V2 新模块为 `src/follow/`（纯对齐算法、Worker、状态机、语音桥接、舒适区滚动及协调 Hook）、`src-tauri/src/asr.rs`（共享麦克风、缓存、独立进程与资源释放）和 `runtime/asr/worker.py`（本地 SenseVoice 推理协议）。它们不依赖云 API。手动输入优先于任何自动结果。
+
+`src/timed.ts` 根据正文及实际布局构建语速映射，以单一动画循环推进；`src/useTimedScroll.ts` 协调模式、字体、缩放、隐藏和暂停生命周期。连续滚动期间定期保存阅读位置，避免一直等待滚动结束才保存。

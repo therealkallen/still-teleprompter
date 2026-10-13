@@ -6,3 +6,10 @@ src-tauri/gen/
 .impeccable/
 artifacts/
 release/
+runtime/python/
+runtime/asr/*.onnx
+runtime/asr/tokens.txt
+runtime/asr-build.json
+runtime/assets-manifest.json
+runtime/licenses/
+__pycache__/

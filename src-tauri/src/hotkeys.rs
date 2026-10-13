@@ -20,7 +20,8 @@ pub struct Registration {
 pub struct Hotkeys(pub Mutex<Vec<Shortcut>>);
 
 fn parse(binding: &Binding) -> Result<Shortcut, String> {
-    if !["up", "down", "previous", "next", "bookmark"].contains(&binding.action.as_str()) {
+    if !["up", "down", "previous", "next", "bookmark", "follow"].contains(&binding.action.as_str())
+    {
         return Err("未知快捷键动作。".into());
     }
     // A meaningful modifier is required; Shift alone must never consume ordinary typing.
@@ -44,8 +45,8 @@ pub fn configure_hotkeys(
     state: tauri::State<Hotkeys>,
     bindings: Vec<Binding>,
 ) -> Result<Vec<Registration>, String> {
-    if bindings.len() > 5 {
-        return Err("最多支持五个全局快捷键。".into());
+    if bindings.len() > 6 {
+        return Err("最多支持六个全局快捷键。".into());
     }
     let mut active = state.0.lock().map_err(|e| e.to_string())?;
     // Do not leave old bindings active while reporting that the user's new settings apply.

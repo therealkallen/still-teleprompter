@@ -1,3 +1,4 @@
+mod asr;
 mod capture;
 mod hotkeys;
 mod persistence;
@@ -21,6 +22,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .manage(persistence::StorageLock::default())
         .manage(hotkeys::Hotkeys::default())
+        .manage(asr::AsrService::default())
         .setup(|app| {
             let window = app
                 .get_webview_window("main")
@@ -36,6 +38,10 @@ pub fn run() {
             persistence::load_workspace,
             persistence::save_workspace,
             hotkeys::configure_hotkeys,
+            asr::list_microphones,
+            asr::start_auto_follow,
+            asr::stop_auto_follow,
+            asr::reset_auto_follow,
             reveal_window
         ])
         .run(tauri::generate_context!())

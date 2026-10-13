@@ -1,0 +1,142 @@
+[
+  {
+    "file": "rust/alloc-stdlib-0.2.4/LICENSE",
+    "url": "https://raw.githubusercontent.com/dropbox/rust-alloc-no-stdlib/ae42d22078b98549e987d2f03d12df7b984fde47/LICENSE"
+  },
+  {
+    "file": "rust/dasp_sample-0.11.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/dasp_sample-0.11.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/rustaudio/sample/97c3bb9b2363c0b46ac1633858bf1054fd02a980/LICENSE-MIT"
+  },
+  {
+    "file": "rust/defmt-parser-1.0.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/defmt-parser-1.0.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/knurling-rs/defmt/4a8cdb44891ed57b8ff5a023b6bec7137c48708f/LICENSE-MIT"
+  },
+  {
+    "file": "rust/selectors-0.36.1/LICENSE-MPL-2.0.txt",
+    "url": "https://www.mozilla.org/media/MPL/2.0/index.f75d2927d3c1.txt"
+  },
+  {
+    "file": "rust/unic-char-property-0.9.0/COPYRIGHT.md",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md"
+  },
+  {
+    "file": "rust/unic-char-property-0.9.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/unic-char-property-0.9.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT"
+  },
+  {
+    "file": "rust/unic-char-range-0.9.0/COPYRIGHT.md",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md"
+  },
+  {
+    "file": "rust/unic-char-range-0.9.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/unic-char-range-0.9.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT"
+  },
+  {
+    "file": "rust/unic-common-0.9.0/COPYRIGHT.md",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md"
+  },
+  {
+    "file": "rust/unic-common-0.9.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/unic-common-0.9.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT"
+  },
+  {
+    "file": "rust/unic-ucd-ident-0.9.0/COPYRIGHT.md",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/COPYRIGHT.md"
+  },
+  {
+    "file": "rust/unic-ucd-ident-0.9.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/unic-ucd-ident-0.9.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/8a6ce83063d90b91ae2ce59eddb803edd393fca9/LICENSE-MIT"
+  },
+  {
+    "file": "rust/unic-ucd-version-0.9.0/COPYRIGHT.md",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/COPYRIGHT.md"
+  },
+  {
+    "file": "rust/unic-ucd-version-0.9.0/LICENSE-APACHE",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-APACHE"
+  },
+  {
+    "file": "rust/unic-ucd-version-0.9.0/LICENSE-MIT",
+    "url": "https://raw.githubusercontent.com/open-i18n/rust-unic/5878605364af97a3358368a6eaef02104af2e016/LICENSE-MIT"
+  },
+  {
+    "file": "rust/webview2-com-0.38.2/LICENSE",
+    "url": "https://raw.githubusercontent.com/wravery/webview2-rs/b74dc5e2b394044bea5191052868ce7a106c202c/LICENSE"
+  },
+  {
+    "file": "rust/webview2-com-macros-0.8.1/LICENSE",
+    "url": "https://raw.githubusercontent.com/wravery/webview2-rs/dffa41a8a46d3f5565eefbff2de57d38d399f158/LICENSE"
+  },
+  {
+    "file": "rust/webview2-com-sys-0.38.2/LICENSE",
+    "url": "https://raw.githubusercontent.com/wravery/webview2-rs/b74dc5e2b394044bea5191052868ce7a106c202c/LICENSE"
+  },
+  {
+    "file": "rust/tauri-plugin-2.6.3/LICENSE_APACHE-2.0",
+    "url": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_APACHE-2.0"
+  },
+  {
+    "file": "rust/tauri-plugin-2.6.3/LICENSE_MIT",
+    "url": "https://raw.githubusercontent.com/tauri-apps/tauri/6f6ab1207bb3923c2721fbc67d2fdb1c8deb0c7a/LICENSE_MIT"
+  },
+  {
+    "file": "runtime/sensevoice/CONVERSION-LICENSE.txt",
+    "url": "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17/raw/main/LICENSE"
+  },
+  {
+    "file": "runtime/sensevoice/FunASR-MODEL-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/modelscope/FunASR/main/MODEL_LICENSE"
+  },
+  {
+    "file": "runtime/onnxruntime-1.23.2/LICENSE",
+    "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.23.2/LICENSE"
+  },
+  {
+    "file": "runtime/onnxruntime-1.23.2/ThirdPartyNotices.txt",
+    "url": "https://raw.githubusercontent.com/microsoft/onnxruntime/v1.23.2/ThirdPartyNotices.txt"
+  },
+  {
+    "file": "runtime/sherpa-onnx-1.12.28/LICENSE",
+    "url": "https://raw.githubusercontent.com/k2-fsa/sherpa-onnx/v1.12.28/LICENSE"
+  },
+  {
+    "file": "runtime/cpython-3.11.9/LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/python/cpython/v3.11.9/LICENSE"
+  },
+  {
+    "file": "runtime/cpython-3.11.9/Tcl-license.terms",
+    "url": "https://raw.githubusercontent.com/python/cpython-source-deps/tcl-core-8.6.12.1/license.terms"
+  },
+  {
+    "file": "runtime/cpython-3.11.9/Tk-license.terms",
+    "url": "https://raw.githubusercontent.com/python/cpython-source-deps/tk-8.6.12.1/license.terms"
+  },
+  {
+    "file": "runtime/cpython-3.11.9/OpenSSL-LICENSE.txt",
+    "url": "https://raw.githubusercontent.com/openssl/openssl/openssl-3.0.13/LICENSE.txt"
+  }
+]

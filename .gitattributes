@@ -1,0 +1,3 @@
+# Preserve upstream license whitespace, including verbatim generated excerpts.
+docs/THIRD-PARTY-LICENSES.txt -whitespace
+docs/licenses/** -whitespace

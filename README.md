@@ -4,6 +4,19 @@
 
 当前版本为 **2.0.0-beta.2**：支持手动、自动跟读和定时三种模式，无账号、云端语音服务或 LLM。真人语音跟读、Teams 麦克风共用和两小时稳定性仍待验收，见 [V2 验证记录](docs/V2-VALIDATION.md)。
 
+## 下载给同事使用
+
+[下载 Windows x64 完整测试包](https://github.com/therealkallen/still-teleprompter/releases/download/v2.0.0-beta.2/Still-2.0.0-beta.2-windows-x64.zip) · [版本说明与校验文件](https://github.com/therealkallen/still-teleprompter/releases/tag/v2.0.0-beta.2)
+
+1. 下载约 180 MB 的 `Still-2.0.0-beta.2-windows-x64.zip`，选择「全部解压」。GitHub 的 Source code ZIP 是源码，使用者应下载带 `windows-x64` 的应用包。
+2. 先退出旧版，再进入解压后的文件夹运行 `Still.exe`；同目录的 `runtime` 必须保留。无需安装 Python、Node.js 或 Rust。
+3. 需要 Windows 10/11 x64 和 Microsoft Edge WebView2 Runtime。若缺少 WebView2，从 [Microsoft 官方页面](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) 安装 Evergreen Runtime。
+4. 手动或定时模式可直接使用；自动模式点击「开始跟读」后才开启麦克风。正式会议前先测试本机语音、Teams 共享和录制效果。
+
+本测试包尚未签名。若 Windows 提示「未知发布者」，先核对下载来源；Release 附带 SHA-256 校验文件。
+
+Still's original source is open source under the [MIT License](LICENSE). Download the full Windows portable ZIP from [Releases](https://github.com/therealkallen/still-teleprompter/releases); extract everything and run `Still.exe`. Speech models and dependencies retain their [own licenses](THIRD_PARTY_NOTICES.md).
+
 ## V2 测试包与自动跟读
 
 完整解压 `release/Still-2.0.0-beta.2-windows-x64.zip`，运行目录中的 `Still.exe`。必须保留同目录的 `runtime`，不需要安装系统 Python。需要 Windows 10/11 x64 和 WebView2。先退出旧版再打开新版；仍使用 `com.still.teleprompter` 数据目录，建议升级前保留 `workspace.json` 和 `.bak` 的副本。之前的发布版保留在 release 中。
@@ -32,6 +45,8 @@
 
 模型不放入 Git。复用已兼容的 SenseVoiceSmall INT8 sherpa-onnx runtime，包含 `python/python.exe`、`asr/model.int8.onnx`、`asr/tokens.txt` 和 `sherpa_onnx/lib` 下的原生扩展与 ONNX Runtime。使用路径参数复制到本项目，不改动原项目，不自动下载权重：
 
+公开源码的开发者可先下载上方完整测试包，把解压目录里的 `runtime` 作为 `SourceRuntime`，把其中的 `runtime/licenses` 作为 `SourceLicenses`。这样可复用经过验证的资源与许可，无需另一项目。
+
 ```powershell
 ./scripts/prepare-asr.ps1 -SourceRuntime '你的 ASR-only runtime 目录' -SourceLicenses '对应许可目录'
 npm run desktop
@@ -49,6 +64,7 @@ python -B scripts/verify-asr.py --wav '测试语音.wav'
 cargo test --manifest-path src-tauri/Cargo.toml --lib shared_microphone_capture_smoke -- --ignored --nocapture
 # release 编译 + 包含所有模型、运行库和许可的便携 ZIP 与体积报告
 npm run package -- --no-bundle
+node scripts/generate-notices.mjs
 ./scripts/package-v2.ps1
 ```
 
@@ -212,3 +228,7 @@ docs/
 `ScrollController.moveTo()` 继续作为滚动入口。V2 新模块为 `src/follow/`（纯对齐算法、Worker、状态机、语音桥接、舒适区滚动及协调 Hook）、`src-tauri/src/asr.rs`（共享麦克风、缓存、独立进程与资源释放）和 `runtime/asr/worker.py`（本地 SenseVoice 推理协议）。它们不依赖云 API。手动输入优先于任何自动结果。
 
 `src/timed.ts` 根据正文及实际布局构建语速映射，以单一动画循环推进；`src/useTimedScroll.ts` 协调模式、字体、缩放、隐藏和暂停生命周期。连续滚动期间定期保存阅读位置，避免一直等待滚动结束才保存。
+
+## 开源许可
+
+Still 原创代码采用 [MIT License](LICENSE)。模型权重、运行环境和第三方库使用各自许可证，出处及完整许可文本见 [第三方说明](THIRD_PARTY_NOTICES.md)。

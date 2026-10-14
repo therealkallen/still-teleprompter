@@ -4,7 +4,7 @@
 
 当前版本为 **2.0.0-beta.2**：支持手动、自动跟读和定时三种模式，无账号、云端语音服务或 LLM。真人语音跟读、Teams 麦克风共用和两小时稳定性仍待验收，见 [V2 验证记录](docs/V2-VALIDATION.md)。
 
-## 下载给同事使用
+## 下载使用
 
 [下载 Windows x64 完整测试包](https://github.com/therealkallen/still-teleprompter/releases/download/v2.0.0-beta.2/Still-2.0.0-beta.2-windows-x64.zip) · [版本说明与校验文件](https://github.com/therealkallen/still-teleprompter/releases/tag/v2.0.0-beta.2)
 
